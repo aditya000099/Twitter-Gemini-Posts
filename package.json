@@ -1,0 +1,17 @@
+{
+  "name": "twitter-gemini-posts",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.7",
+    "node-schedule": "^2.1.1",
+    "twitter-api-v2": "^1.19.0"
+  }
+}
