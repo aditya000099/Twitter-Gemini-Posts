@@ -131,16 +131,32 @@ async function main() {
     await main();
 })();
 
-
-
-// Schedule the job to run every 1.5 hours
-const job = schedule.scheduleJob('0 */1.5 * * *', async () => {
-    console.log('Running scheduled tweet generation and posting at:', new Date());
-    await main();
+// Schedule the job to run every hour
+const job = schedule.scheduleJob('0 * * * *', async () => {
+  const now = new Date();
+  const formattedDate = now.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    timeZoneName: 'short',
   });
+  console.log('Running scheduled tweet generation and posting at:', formattedDate);
+
+  try {
+    await main();
+  } catch (error) {
+    console.error("An error occurred during tweet generation or posting:", error);
+    // Do nothing and wait for the next scheduled interval
+  }
+
+});
 
 
-console.log("Scheduled tweet job to run every 1.5 hours.");
+console.log("Scheduled tweet job to run every hour.");
+
 
 // Keep the script running indefinitely
 setInterval(() => {
