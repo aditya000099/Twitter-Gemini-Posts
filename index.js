@@ -39,41 +39,49 @@ const rwClient = twitterClient.readWrite;
 async function generateTweet() {
     try {
       const prompts = [
-        // Elon Musk Style (Bold, Visionary, A bit Provocative)
-        "Generate a tweet in Elon Musk's style about the future of AI and its potential impact on humanity. Keep it under 280 characters. Don't include any hashtags. Make it sound very ambitious.",
-        "Write a tweet like Elon Musk discussing a breakthrough in AI and how it will disrupt the SAAS market. Keep it under 280 characters. Don't include any hashtags. Make it sound like he discovered it himself.",
-        "Create a tweet in Elon Musk's tone about the challenges of building a startup in the AI space. Keep it under 280 characters. Don't include any hashtags. Add some humor like he always makes.",
-         "Write a tweet from the perspective of Elon Musk explaining the importance of open source AI. Keep it under 280 characters. Don't include any hashtags.",
-        "Write a tweet in Elon Musk's style about his next AI project. Keep it under 280 characters. Don't include any hashtags.",
-    
-        // Kunal Shah Style (Analytical, Business-Focused, Insightful)
-        "Write a tweet in Kunal Shah's style analyzing the current SAAS market and predicting future trends. Keep it under 280 characters. Don't include any hashtags. Use business terminology",
-        "Generate a tweet like Kunal Shah about a unique AI tool he believes is poised to disrupt the startup ecosystem. Keep it under 280 characters. Don't include any hashtags. Try to sound very smart.",
-        "Create a tweet with Kunal Shah's tone about the importance of a great product and business. Keep it under 280 characters. Don't include any hashtags. Use business terminology.",
-        "Write a tweet in Kunal Shah's style about common misconceptions about AI and startups. Keep it under 280 characters. Don't include any hashtags.",
-        "Write a tweet from the perspective of Kunal Shah about how AI can improve the efficiency of startups. Keep it under 280 characters. Don't include any hashtags.",
-          
-    
-        // Lex Fridman Style (Philosophical, Thought-Provoking, Deep)
-        "Generate a tweet in Lex Fridman's style reflecting on the ethical implications of AI. Keep it under 280 characters. Don't include any hashtags. Try to sound very philosophical.",
-        "Write a tweet from Lex Fridman about how AI can impact the meaning of life. Keep it under 280 characters. Don't include any hashtags. Be very insightful.",
-        "Create a tweet with Lex Fridman's tone exploring the human element in tech development. Keep it under 280 characters. Don't include any hashtags. Try to be very thoughtful.",
-         "Write a tweet in the style of Lex Fridman about the future of education in the age of AI. Keep it under 280 characters. Don't include any hashtags. Try to keep it thought provoking.",
-        "Write a tweet from the perspective of Lex Fridman about the role of human creativity in an AI driven world. Keep it under 280 characters. Don't include any hashtags",
-    
-        // Tones Style (Direct, Pragmatic, Developer-Centric)
-         "Write a tweet in a developer's tone about the pros and cons of the latest AI tools for development. Keep it under 280 characters. Don't include any hashtags. Be very honest and pragmatic.",
-        "Create a tweet using a dev's tone about how to solve the most frustrating problems with AI for developers. Keep it under 280 characters. Don't include any hashtags. Talk like a developer.",
-          "Generate a tweet from the perspective of a developer using a funny way on the joys and frustrations of working with AI tools. Keep it under 280 characters. Don't include any hashtags. Talk like a developer.",
-          "Write a tweet in a pragmatic tone like a developer discussing a common pain point in the workflow of developing with AI tools. Keep it under 280 characters. Don't include any hashtags. Talk like a developer.",
-        "Write a tweet in a developer tone asking what are the best AI tools a developer can use to improve their work. Keep it under 280 characters. Don't include any hashtags",
+        // General/Humorous (20-25 year old tone)
+        "Write a short, humorous tweet about the struggles of being a developer, from the perspective of a 20-something-year-old. Keep it under 280 characters. Don't include any hashtags. Add some relatable humor.",
+        "Generate a tweet about a funny situation a developer might face while working with AI tools, in the voice of a 20-something-year-old. Keep it under 280 characters. Don't include any hashtags. Make it lighthearted.",
+        "Create a tweet about a common tech problem, but said with the frustration of a 20-year-old. Keep it under 280 characters. Don't include any hashtags. Use mild language",
+        "Write a tweet about a typical coding session, but from the perspective of a 20-year-old. Keep it under 280 characters. Don't include any hashtags. Make it relatable.",
+       "Write a short tweet about that feeling when you finally fix a bug. Keep it under 280 characters. Don't include any hashtags, use slang and mild language",
         
-       //Startup focused
-        "Write a tweet about a new approach to raising funds for a AI startup, and make it a hot take. Keep it under 280 characters. Don't include any hashtags.",
-          "Generate a tweet about what are some of the things a startup should look at before deciding to use AI tools. Keep it under 280 characters. Don't include any hashtags.",
-        "Write a tweet that talks about the challenges that startups face when deciding to implement AI. Keep it under 280 characters. Don't include any hashtags",
-        "Write a tweet about what are the 3 most important things when creating an AI powered SAAS. Keep it under 280 characters. Don't include any hashtags",
-        "Write a tweet that encourages startup founders to explore new and innovative AI applications in their business. Keep it under 280 characters. Don't include any hashtags",
+         // Hindi Mix
+        "Generate a tweet in Hindi about the struggles of learning a new programming language. Keep it under 280 characters. Don't include any hashtags. Use a casual tone, like a 20 year old would say it.",
+        "Write a tweet in a mix of Hindi and English about the joys and pains of debugging. Keep it under 280 characters. Don't include any hashtags. Make it funny and relatable.",
+        "Create a tweet mixing Hindi and English about a funny incident that happened during an interview. Keep it under 280 characters. Don't include any hashtags. Be light hearted",
+        "Write a tweet in Hindi about an AI tool that blew your mind. Keep it under 280 characters. Don't include any hashtags. Use a very chill tone.",
+      "Write a tweet in a mix of Hindi and English about that feeling when you solve a bug. Keep it under 280 characters. Don't include any hashtags. Be very chill and relatable",
+    
+        // Interview Experiences
+        "Generate a tweet about a funny or awkward moment from a recent tech interview, from a 20-something's perspective. Keep it under 280 characters. Don't include any hashtags. Make it relatable.",
+        "Write a tweet describing the feeling after an interview. Keep it under 280 characters. Don't include any hashtags. Make it relatable",
+         "Create a tweet using mild language and humor to describe the struggles of tech interviews. Keep it under 280 characters. Don't include any hashtags",
+          "Write a tweet in a funny way about those coding tests that happen during tech interviews. Keep it under 280 characters. Don't include any hashtags",
+        "Write a tweet describing a common misconception about coding interviews. Keep it under 280 characters. Don't include any hashtags. Use mild language and a funny tone",
+    
+    
+        // AI Tool Focused
+        "Write a tweet about a cool new AI tool that blew your mind. Keep it under 280 characters. Don't include any hashtags. Be genuinely amazed.",
+        "Create a tweet roasting a popular AI tool and talking about its flaws. Keep it under 280 characters. Don't include any hashtags. Be sarcastic but humorous.",
+        "Generate a tweet about how a AI tool made your developer life so much easier. Keep it under 280 characters. Don't include any hashtags. Be genuinely happy about it.",
+         "Write a tweet about how AI is going to change the way we develop software. Keep it under 280 characters. Don't include any hashtags. Try to be very insightful.",
+         "Write a tweet about why AI tools are so important for a student. Keep it under 280 characters. Don't include any hashtags. Make it relateable for students",
+    
+        // Mild Gaali/Frustration
+         "Generate a tweet expressing frustration about debugging a particularly annoying bug, use mild language. Keep it under 280 characters. Don't include any hashtags.",
+        "Write a tweet about the struggle of understanding a complicated piece of code, use mild language. Keep it under 280 characters. Don't include any hashtags.",
+        "Create a tweet about a specific tool that is particularly bad, use mild language. Keep it under 280 characters. Don't include any hashtags. Be sarcastic",
+        "Write a tweet about the frustration when a library is not working as expected, use mild language. Keep it under 280 characters. Don't include any hashtags. Be humorous",
+        "Write a tweet about what you do when you are completely stuck while coding, use mild language. Keep it under 280 characters. Don't include any hashtags",
+    
+    
+        // Technical Stuff
+        "Write a short technical tweet explaining one important concept in a very simple way. Keep it under 280 characters. Don't include any hashtags. Make it easy to understand",
+        "Create a tweet that asks other developers what are some of their favorite resources. Keep it under 280 characters. Don't include any hashtags. Be genuine and curious.",
+          "Generate a tweet that talks about how important it is to keep learning and improving your skills. Keep it under 280 characters. Don't include any hashtags. Be genuine and encouraging",
+          "Write a tweet about how important open source is for the developer community. Keep it under 280 characters. Don't include any hashtags. Be genuine and encouraging",
+        "Write a tweet about what you are currently learning and if it has helped you. Keep it under 280 characters. Don't include any hashtags. Share your experiences",
     ];
     
         const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
@@ -86,6 +94,8 @@ async function generateTweet() {
         return null;
       }
 }
+
+//hindi, interview experience, more on AI, replies to big accounts, 
 
 // Function to post a tweet to Twitter
 async function postTweet(tweetText) {
