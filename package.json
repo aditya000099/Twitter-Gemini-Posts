@@ -10,7 +10,9 @@
   "description": "",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "axios": "^1.7.9",
     "dotenv": "^16.4.7",
+    "https": "^1.0.0",
     "node-schedule": "^2.1.1",
     "twitter-api-v2": "^1.19.0"
   }

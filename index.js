@@ -1,174 +1,365 @@
-require('dotenv').config();
+require("dotenv").config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { TwitterApi } = require('twitter-api-v2');
-const schedule = require('node-schedule');
+const { TwitterApi } = require("twitter-api-v2");
+const schedule = require("node-schedule");
+const axios = require("axios");
+const https = require("https");
 
-// Check if required environment variables are set
+// Configuration
+const config = {
+  tweetInterval: "0 * * * *", // Every hour at minute 0
+  testMode: false,
+  newsKeywords: [
+    "AI",
+    "Tech",
+    "SpaceX",
+    "NASA",
+    "Machine Learning",
+    "Innovation",
+    "Startups",
+    "SAAS",
+    "Technology",
+  ],
+  maxRetries: 3,
+  tweetMaxLength: 280,
+  aiPromptVariations: 5,
+  topTweetKeywords: [
+    "ai",
+    "saas",
+    "google",
+    "openai",
+    "microsoft",
+    "apple",
+    "nvidia",
+    "memecoins",
+    "tech",
+    "innovation",
+  ],
+};
+
+// Validate environment variables
 const requiredEnvVars = [
-    'GEMINI_API_KEY',
-    'TWITTER_API_KEY',
-    'TWITTER_API_SECRET',
-    'TWITTER_BEARER_TOKEN',
-    'TWITTER_ACCESS_TOKEN',
-    'TWITTER_ACCESS_SECRET',
-  ];
-  
-  for (const varName of requiredEnvVars) {
-    if (!process.env[varName]) {
-      console.error(`Error: Missing environment variable ${varName}`);
-      process.exit(1);
-    }
+  "GEMINI_API_KEY",
+  "TWITTER_API_KEY",
+  "TWITTER_API_SECRET",
+  "TWITTER_BEARER_TOKEN",
+  "TWITTER_ACCESS_TOKEN",
+  "TWITTER_ACCESS_SECRET",
+  "CURRENTS_API_KEY",
+];
+
+requiredEnvVars.forEach((varName) => {
+  if (!process.env[varName]) {
+    console.error(`Missing required environment variable: ${varName}`);
+    process.exit(1);
   }
-
-
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-// Initialize Twitter API client
-const twitterClient = new TwitterApi({
-    appKey: process.env.TWITTER_API_KEY,
-    appSecret: process.env.TWITTER_API_SECRET,
-    accessToken: process.env.TWITTER_ACCESS_TOKEN,
-    accessSecret: process.env.TWITTER_ACCESS_SECRET,
-  });
-
-const rwClient = twitterClient.readWrite;
-
-// Function to generate a tweet from AI
-async function generateTweet() {
-    try {
-      const prompts = [
-        // General/Humorous (20-25 year old tone)
-        "Write a short, humorous tweet about the struggles of being a developer, from the perspective of a 20-something-year-old. Keep it under 280 characters. Don't include any hashtags. Add some relatable humor.",
-        "Generate a tweet about a funny situation a developer might face while working with AI tools, in the voice of a 20-something-year-old. Keep it under 280 characters. Don't include any hashtags. Make it lighthearted.",
-        "Create a tweet about a common tech problem, but said with the frustration of a 20-year-old. Keep it under 280 characters. Don't include any hashtags. Use mild language",
-        "Write a tweet about a typical coding session, but from the perspective of a 20-year-old. Keep it under 280 characters. Don't include any hashtags. Make it relatable.",
-       "Write a short tweet about that feeling when you finally fix a bug. Keep it under 280 characters. Don't include any hashtags, use slang and mild language",
-        
-         // Hindi Mix
-        "Generate a tweet in Hindi about the struggles of learning a new programming language. Keep it under 280 characters. Don't include any hashtags. Use a casual tone, like a 20 year old would say it.",
-        "Write a tweet in a mix of Hindi and English about the joys and pains of debugging. Keep it under 280 characters. Don't include any hashtags. Make it funny and relatable.",
-        "Create a tweet mixing Hindi and English about a funny incident that happened during an interview. Keep it under 280 characters. Don't include any hashtags. Be light hearted",
-        "Write a tweet in Hindi about an AI tool that blew your mind. Keep it under 280 characters. Don't include any hashtags. Use a very chill tone.",
-      "Write a tweet in a mix of Hindi and English about that feeling when you solve a bug. Keep it under 280 characters. Don't include any hashtags. Be very chill and relatable",
-    
-        // Interview Experiences
-        "Generate a tweet about a funny or awkward moment from a recent tech interview, from a 20-something's perspective. Keep it under 280 characters. Don't include any hashtags. Make it relatable.",
-        "Write a tweet describing the feeling after an interview. Keep it under 280 characters. Don't include any hashtags. Make it relatable",
-         "Create a tweet using mild language and humor to describe the struggles of tech interviews. Keep it under 280 characters. Don't include any hashtags",
-          "Write a tweet in a funny way about those coding tests that happen during tech interviews. Keep it under 280 characters. Don't include any hashtags",
-        "Write a tweet describing a common misconception about coding interviews. Keep it under 280 characters. Don't include any hashtags. Use mild language and a funny tone",
-    
-    
-        // AI Tool Focused
-        "Write a tweet about a cool new AI tool that blew your mind. Keep it under 280 characters. Don't include any hashtags. Be genuinely amazed.",
-        "Create a tweet roasting a popular AI tool and talking about its flaws. Keep it under 280 characters. Don't include any hashtags. Be sarcastic but humorous.",
-        "Generate a tweet about how a AI tool made your developer life so much easier. Keep it under 280 characters. Don't include any hashtags. Be genuinely happy about it.",
-         "Write a tweet about how AI is going to change the way we develop software. Keep it under 280 characters. Don't include any hashtags. Try to be very insightful.",
-         "Write a tweet about why AI tools are so important for a student. Keep it under 280 characters. Don't include any hashtags. Make it relateable for students",
-    
-        // Mild Gaali/Frustration
-         "Generate a tweet expressing frustration about debugging a particularly annoying bug, use mild language. Keep it under 280 characters. Don't include any hashtags.",
-        "Write a tweet about the struggle of understanding a complicated piece of code, use mild language. Keep it under 280 characters. Don't include any hashtags.",
-        "Create a tweet about a specific tool that is particularly bad, use mild language. Keep it under 280 characters. Don't include any hashtags. Be sarcastic",
-        "Write a tweet about the frustration when a library is not working as expected, use mild language. Keep it under 280 characters. Don't include any hashtags. Be humorous",
-        "Write a tweet about what you do when you are completely stuck while coding, use mild language. Keep it under 280 characters. Don't include any hashtags",
-    
-    
-        // Technical Stuff
-        "Write a short technical tweet explaining one important concept in a very simple way. Keep it under 280 characters. Don't include any hashtags. Make it easy to understand",
-        "Create a tweet that asks other developers what are some of their favorite resources. Keep it under 280 characters. Don't include any hashtags. Be genuine and curious.",
-          "Generate a tweet that talks about how important it is to keep learning and improving your skills. Keep it under 280 characters. Don't include any hashtags. Be genuine and encouraging",
-          "Write a tweet about how important open source is for the developer community. Keep it under 280 characters. Don't include any hashtags. Be genuine and encouraging",
-        "Write a tweet about what you are currently learning and if it has helped you. Keep it under 280 characters. Don't include any hashtags. Share your experiences",
-    ];
-    
-        const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-        const result = await model.generateContent(randomPrompt);
-        const tweetText = result.response.text();
-        return tweetText;
-    
-      } catch (error) {
-        console.error("Error generating tweet:", error);
-        return null;
-      }
-}
-
-//hindi, interview experience, more on AI, replies to big accounts, 
-
-// Function to post a tweet to Twitter
-async function postTweet(tweetText) {
-    if(!tweetText){
-        console.error("No tweet text provided, cannot post to twitter")
-        return;
-    }
-  try {
-    const response = await rwClient.v2.tweet(tweetText);
-    console.log("Tweet posted:", response.data.id);
-  } catch (error) {
-    console.error("Error posting tweet:", error);
-    throw error; // rethrow error to trigger retry logic
-  }
-}
-
-
-// Main function to generate and post a tweet
-async function main() {
-    const tweetText = await generateTweet();
-    console.log("Generated tweet:", tweetText);
-  
-    if (tweetText) {
-        try{
-            await postTweet(tweetText);
-        } catch (error) {
-            console.error("Error posting tweet:", error);
-            console.log("Retrying to post tweet after 30 seconds");
-            setTimeout(async () => {
-                try {
-                    await postTweet(tweetText);
-                  } catch (retryError) {
-                    console.error("Retry failed:", retryError);
-                  }
-            }, 30000);
-        }
-    }
-}
-
-// Immediately run the main function on start
-(async () => {
-    console.log("Running initial tweet generation and posting on startup");
-    await main();
-})();
-
-// Schedule the job to run every hour
-const job = schedule.scheduleJob('0 * * * *', async () => {
-  const now = new Date();
-  const formattedDate = now.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-    timeZoneName: 'short',
-  });
-  console.log('Running scheduled tweet generation and posting at:', formattedDate);
-
-  try {
-    await main();
-  } catch (error) {
-    console.error("An error occurred during tweet generation or posting:", error);
-    // Do nothing and wait for the next scheduled interval
-  }
-
 });
 
+// Initialize APIs
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-console.log("Scheduled tweet job to run every hour.");
+const twitterClient = new TwitterApi({
+  appKey: process.env.TWITTER_API_KEY,
+  appSecret: process.env.TWITTER_API_SECRET,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN,
+  accessSecret: process.env.TWITTER_ACCESS_SECRET,
+});
 
+const rwClient = twitterClient.readWrite;
+// Rate limit tracking
+const rateLimits = {
+  tweets: {
+    remaining: 50,
+    reset: 0,
+  },
+};
 
-// Keep the script running indefinitely
-setInterval(() => {
-    // This does nothing, but keeps the script alive
-}, 10000);
+// Enhanced logger
+const logger = {
+  info: (...args) =>
+    console.log(`[${new Date().toISOString()}] INFO:`, ...args),
+  error: (...args) =>
+    console.error(`[${new Date().toISOString()}] ERROR:`, ...args),
+  debug: (...args) =>
+    console.debug(`[${new Date().toISOString()}] DEBUG:`, ...args),
+};
+
+// Twitter API Helper
+class TwitterHelper {
+  static async searchRecentTweets(query) {
+    try {
+      const result = await twitterClient.v2.search(query, {
+        "tweet.fields": ["public_metrics"],
+        max_results: 10,
+      });
+
+      if (!result?.data?.length) return null;
+
+      // Filter tweets with engagement
+      return result.data.filter(
+        (t) =>
+          t.public_metrics.like_count > 10 || t.public_metrics.retweet_count > 5
+      );
+    } catch (error) {
+      logger.error("Twitter search failed:", error);
+      return null;
+    }
+  }
+
+  static async fetchTopTweets() {
+    const randomKeyword =
+      config.topTweetKeywords[
+        Math.floor(Math.random() * config.topTweetKeywords.length)
+      ];
+    const options = {
+      method: "GET",
+      url: "https://twitter-v24.p.rapidapi.com/search/",
+      params: {
+        query: randomKeyword,
+        section: "top",
+        limit: "10",
+      },
+      headers: {
+        "x-rapidapi-key": "aa81d9bcc0mshdbcda7e2ad75055p1ced75jsnf5dacefd3151",
+        "x-rapidapi-host": "twitter-v24.p.rapidapi.com",
+      },
+    };
+    try {
+      const response = await axios.request(options);
+      logger.debug("Top Tweets API Response:", response.data);
+      if (
+        response.data &&
+        response.data.search_by_raw_query &&
+        response.data.search_by_raw_query.search_timeline &&
+        response.data.search_by_raw_query.search_timeline.timeline &&
+        response.data.search_by_raw_query.search_timeline.timeline.instructions
+      ) {
+        const entries =
+          response.data.search_by_raw_query.search_timeline.timeline.instructions.find(
+            (item) => item.type === "TimelineAddEntries"
+          )?.entries;
+        if (entries) {
+          const validTweets = entries
+            .filter(
+              (entry) => entry.entryId && entry.entryId.startsWith("tweet-")
+            )
+            .map((entry) => {
+              const tweetData =
+                response.data.globalObjects?.tweets?.[
+                  entry.entryId.split("-")[1]
+                ];
+              return tweetData?.full_text;
+            })
+            .filter(Boolean);
+          if (validTweets.length > 0) {
+            return validTweets[Math.floor(Math.random() * validTweets.length)];
+          } else {
+            return null;
+          }
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (error) {
+      logger.error("Top tweets fetch failed:", error);
+      return null;
+    }
+  }
+
+  static async postTweet(text) {
+    if (config.testMode) {
+      logger.info("Test mode - Would have tweeted:", text);
+      return { data: { id: "test_id" } };
+    }
+
+    try {
+      const response = await rwClient.v2.tweet(text);
+      logger.info(`Tweet posted: ${response.data.id}`);
+      return response;
+    } catch (error) {
+      this.handleRateLimits(error);
+      throw error;
+    }
+  }
+
+  static handleRateLimits(error) {
+    if (error.rateLimit) {
+      rateLimits.tweets = {
+        remaining: error.rateLimit.remaining,
+        reset: error.rateLimit.reset,
+      };
+      logger.info(
+        `Rate limits updated - Remaining: ${error.rateLimit.remaining}`
+      );
+    }
+  }
+}
+
+// AI Helper
+class AIHelper {
+  static async generateTweet(prompt) {
+    let retries = 0;
+    while (retries < config.maxRetries) {
+      try {
+        const result = await aiModel.generateContent(prompt);
+        const text = result.response.text().trim();
+
+        if (!text || text.length > config.tweetMaxLength) {
+          throw new Error("Invalid tweet length");
+        }
+        return text;
+      } catch (error) {
+        logger.error(`AI generation attempt ${retries + 1} failed:`, error);
+      }
+      retries++;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+    return null;
+  }
+}
+
+// Content Generation
+class ContentGenerator {
+  static async getNewsContext() {
+    try {
+      const response = await fetch(
+        `https://api.currentsapi.services/v1/search?domain=zdnet.com&keywords=${
+          config.newsKeywords[
+            Math.floor(Math.random() * config.newsKeywords.length)
+          ]
+        }&language=en&apiKey=${process.env.CURRENTS_API_KEY}`
+      );
+      logger.debug("News API URL:", response.url);
+      const data = await response.json();
+      logger.debug("News API Response:", data);
+      if (data.news && data.news.length > 0) {
+        return data.news[Math.floor(Math.random() * data.news.length)]
+          .description;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      logger.error("News fetch failed:", error);
+      return null;
+    }
+  }
+
+  static async generateTweetContent(useNews) {
+    let retries = 0;
+
+    while (retries < config.maxRetries) {
+      try {
+        let news = null;
+        let topTweet = null;
+        if (useNews) {
+          news = await this.getNewsContext();
+          if (!news) {
+            logger.debug("News API response null, retrying " + (retries + 1));
+          }
+        } else {
+          topTweet = await TwitterHelper.fetchTopTweets();
+          if (!topTweet) {
+            logger.debug(
+              "Top tweet API response null, retrying " + (retries + 1)
+            );
+          }
+        }
+
+        const prompt = this.createPrompt(news, topTweet);
+        const tweet = await AIHelper.generateTweet(prompt);
+
+        if (tweet) {
+          if (news) {
+            return { text: tweet, source: "news" };
+          } else if (topTweet) {
+            return { text: tweet, source: "topTweet" };
+          }
+        }
+      } catch (error) {
+        logger.error(
+          `Content generation attempt ${retries + 1} failed:`,
+          error
+        );
+      }
+      retries++;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+    return null;
+  }
+
+  static createPrompt(news, tweet) {
+    const prompts = [
+      `Create a casual tech-related tweet in the style of a 25-year-old, keeping it under ${
+        config.tweetMaxLength
+      } characters. Don't include any hashtags or beg for engagement, focus on trending topics. ${
+        news ? "React to this news:" + news : ""
+      }`,
+      `Generate a humorous reaction to ${
+        tweet ? "this tweet: " + tweet : "current tech trends"
+      }. Keep it conversational, but don't include any hashtags or beg for anything.`,
+      `Write a tweet that combines ${
+        news ? "this news: " + news : "tech"
+      } with everyday life observations. Casual tone. Do not beg for anything or use hashtags.`,
+      `Create a tweet posing an interesting question about ${
+        news ? "this: " + news : "recent tech developments"
+      }. Don't include hashtags or beg.`,
+      `Generate a short tech hot-take in the style of a young professional. Do not include hashtags or beg for anything, ${
+        tweet ? "Respond to: " + tweet : ""
+      }`,
+    ];
+    return prompts[Math.floor(Math.random() * prompts.length)];
+  }
+}
+
+let useNewsForNextTweet = true;
+
+// Main Execution
+async function executeTweetCycle() {
+  try {
+    if (rateLimits.tweets.remaining < 1) {
+      const resetTime = new Date(rateLimits.tweets.reset * 1000);
+      logger.info(
+        `Rate limit exhausted. Next reset at: ${resetTime.toISOString()}`
+      );
+      return;
+    }
+
+    const tweetData = await ContentGenerator.generateTweetContent(
+      useNewsForNextTweet
+    );
+    if (tweetData) {
+      logger.info(`Tweet will be based on ${tweetData.source}`);
+      await TwitterHelper.postTweet(tweetData.text);
+      useNewsForNextTweet = !useNewsForNextTweet;
+    } else {
+      logger.info(
+        "Skipping this cycle due to null news and top tweet responses."
+      );
+      useNewsForNextTweet = !useNewsForNextTweet;
+    }
+  } catch (error) {
+    logger.error("Tweet cycle failed:", error);
+  }
+}
+
+// Initialization and Scheduling
+(async () => {
+  logger.info("Starting Twitter bot...");
+
+  // Initial tweet
+  await executeTweetCycle();
+
+  // Schedule regular tweets
+  schedule.scheduleJob(config.tweetInterval, async () => {
+    logger.info("Starting scheduled tweet cycle...");
+    await executeTweetCycle();
+  });
+
+  if (config.testMode) {
+    logger.info("Running in test mode - tweets will not be actually posted");
+    schedule.scheduleJob("*/30 * * * * *", executeTweetCycle);
+  }
+})();
